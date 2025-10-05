@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Platform Dashboard</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1f2937; /* Dark background for professional feel */
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1280px;
+        }
+        /* Custom Scrollbar for Video List */
+        #video-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        #video-list-container::-webkit-scrollbar-thumb {
+            background: #4b5563; /* gray-600 */
+            border-radius: 4px;
+        }
+        #video-list-container::-webkit-scrollbar-track {
+            background: #1f2937; /* Dark background */
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 lg:p-8">
+
+    <div id="app" class="container mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col sm:flex-row justify-between items-center bg-gray-900 p-4 rounded-xl shadow-lg mb-6">
+            <h1 class="text-3xl font-extrabold text-white mb-2 sm:mb-0 flex items-center">
+                <svg class="w-8 h-8 mr-2 text-red-500" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.228 0-3.978.257-4.043 2.56-4.375 6.007-.07.728-.113 1.48-.113 2.228s.043 1.5.113 2.228c.332 3.447.397 5.75 4.375 6.007 3.601.246 11.628.245 15.228 0 3.978-.257 4.043-2.56 4.375-6.007.07-.728.113-1.48.113-2.228s-.043-1.5-.113-2.228c-.332-3.447-.397-5.75-4.375-6.007zM10 15V9l5.204 3-5.204 3z"></path></svg>
+                Creator Dashboard
+            </h1>
+            <p id="user-info" class="text-sm text-gray-400">Status: Initializing...</p>
+        </header>
+
+        <!-- Main Content Area: Player (Left) and List (Right) -->
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Video Player/Details (Large Left Column) -->
+            <section class="lg:col-span-2 bg-gray-900 p-6 rounded-xl shadow-xl space-y-4">
+                <h2 id="current-video-title" class="text-2xl font-bold text-white">Select a Video to Stream</h2>
+                
+                <!-- Video Player -->
+                <div class="relative pt-[56.25%] bg-black rounded-lg overflow-hidden shadow-2xl">
+                    <video id="video-player" controls class="absolute top-0 left-0 w-full h-full" poster="https://placehold.co/1280x720/111827/ffffff?text=Streaming+Preview">
+                        <source id="video-source" src="" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                </div>
+
+                <!-- Video Metadata -->
+                <div class="bg-gray-800 p-4 rounded-lg">
+                    <h3 class="text-xl font-semibold text-white">Details</h3>
+                    <p id="video-description" class="text-gray-400 mt-2 italic">Metadata will appear here when a video is selected.</p>
+                </div>
+            </section>
+
+            <!-- Video List and Upload Form (Right Column) -->
+            <aside class="lg:col-span-1 flex flex-col space-y-6">
+                
+                <!-- Upload Form -->
+                <div class="bg-gray-800 p-6 rounded-xl shadow-xl">
+                    <h2 class="text-xl font-bold text-white mb-4">Upload New Video (Simulated)</h2>
+                    <form id="upload-form" class="space-y-3">
+                        <input type="text" id="video-title" placeholder="Video Title" required class="w-full p-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-red-500 focus:border-red-500">
+                        <textarea id="video-description-input" placeholder="Description" required class="w-full p-2 rounded-lg bg-gray-700 text-white border border-gray-600 focus:ring-red-500 focus:border-red-500 h-20"></textarea>
+                        
+                        <div class="flex space-x-2">
+                             <input type="text" id="video-url-input" value="https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4" placeholder="Simulated URL (MP4)" required class="flex-grow p-2 rounded-lg bg-gray-700 text-white border border-gray-600 text-sm">
+                             <button type="button" onclick="document.getElementById('video-url-input').value = 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_10mb.mp4'" class="text-white text-xs px-2 py-1 bg-gray-600 rounded-lg hover:bg-gray-500">Default</button>
+                        </div>
+
+                        <button type="submit" id="upload-button" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg shadow-md transition duration-150 transform active:scale-95 disabled:bg-gray-600 disabled:opacity-75">
+                            Simulate Upload & Save
+                        </button>
+                        <p id="form-status" class="text-sm text-center h-4 text-gray-400"></p>
+                    </form>
+                </div>
+
+                <!-- Video List -->
+                <div class="bg-gray-800 p-6 rounded-xl shadow-xl flex-grow min-h-[200px] flex flex-col">
+                    <h2 class="text-xl font-bold text-white mb-4">My Uploaded Videos</h2>
+                    <div id="video-list-container" class="space-y-3 overflow-y-auto flex-grow">
+                        <!-- Video cards will be populated here -->
+                        <p id="loading-message" class="text-gray-500 text-center py-4">Loading videos...</p>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Set log level to debug
+        setLogLevel('Debug');
+
+        // --- Global Variables and Setup ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let app, db, auth, currentUserId = null;
+        let isAuthReady = false;
+        
+        // Firestore Collection path (Private data)
+        const VIDEO_COLLECTION = (userId) => `artifacts/${appId}/users/${userId}/videos`;
+
+        // UI Elements
+        const userInfo = document.getElementById('user-info');
+        const uploadForm = document.getElementById('upload-form');
+        const uploadButton = document.getElementById('upload-button');
+        const formStatus = document.getElementById('form-status');
+        const videoListContainer = document.getElementById('video-list-container');
+        const loadingMessage = document.getElementById('loading-message');
+        
+        const videoPlayer = document.getElementById('video-player');
+        const videoSource = document.getElementById('video-source');
+        const currentVideoTitle = document.getElementById('current-video-title');
+        const videoDescription = document.getElementById('video-description');
+
+        // --- Initialization and Authentication ---
+
+        /** Initializes Firebase and authenticates the user. */
+        async function initializeFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Sign in with custom token if available, otherwise sign in anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Listener for auth state changes
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUserId = user.uid;
+                        userInfo.textContent = `User ID: ${currentUserId}`;
+                        isAuthReady = true;
+                        uploadButton.disabled = false;
+                        console.log("Firebase Auth Ready. User ID:", currentUserId);
+                        setupRealtimeListener(); 
+                    } else {
+                        console.error("User not authenticated.");
+                        currentUserId = crypto.randomUUID(); // Fallback ID
+                        userInfo.textContent = `Status: Auth Failed. Using Fallback ID: ${currentUserId}`;
+                        isAuthReady = true;
+                        uploadButton.disabled = true;
+                        formStatus.textContent = "Please refresh if authentication fails.";
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error initializing Firebase or authentication:", error);
+                userInfo.textContent = "Status: Error loading Firebase.";
+            }
+        }
+
+        // --- Firestore Operations and Real-time List ---
+
+        /** Sets up the real-time listener for user's uploaded videos. */
+        function setupRealtimeListener() {
+            if (!isAuthReady || !currentUserId) return;
+
+            const videosRef = collection(db, VIDEO_COLLECTION(currentUserId));
+            const q = query(videosRef, orderBy('timestamp', 'desc'));
+
+            onSnapshot(q, (snapshot) => {
+                videoListContainer.innerHTML = '';
+                if (snapshot.empty) {
+                    videoListContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No videos uploaded yet. Use the form above!</p>';
+                } else {
+                    snapshot.docs.forEach((doc) => {
+                        const video = { id: doc.id, ...doc.data() };
+                        createVideoCard(video);
+                    });
+                    // Auto-select the first video if nothing is playing
+                    if (!videoPlayer.src || videoPlayer.src.includes('placehold.co')) {
+                        const firstVideo = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() };
+                        playVideo(firstVideo);
+                    }
+                }
+                loadingMessage.style.display = 'none';
+            }, (error) => {
+                console.error("Error listening to videos:", error);
+                loadingMessage.textContent = "Error loading videos.";
+            });
+        }
+
+        /** * Creates a clickable card for a video in the list.
+         * @param {Object} video - The video metadata object.
+         */
+        function createVideoCard(video) {
+            const card = document.createElement('div');
+            card.className = 'p-4 bg-gray-700 rounded-lg shadow-md hover:bg-red-500/20 transition duration-200 cursor-pointer border border-gray-600';
+            card.setAttribute('data-video-id', video.id);
+            card.innerHTML = `
+                <h3 class="text-md font-semibold text-white truncate">${video.title}</h3>
+                <p class="text-xs text-gray-400 mt-1">${video.description.substring(0, 50)}...</p>
+                <p class="text-xs text-gray-500 mt-2">ID: ${video.id.substring(0, 8)}</p>
+            `;
+            card.addEventListener('click', () => playVideo(video));
+            videoListContainer.appendChild(card);
+        }
+
+        /** * Updates the main player and details area to show the selected video.
+         * @param {Object} video - The video metadata object.
+         */
+        function playVideo(video) {
+            // Update player
+            videoSource.src = video.url;
+            videoPlayer.load(); // Required to load the new source
+            videoPlayer.play().catch(e => console.log("Autoplay blocked or error loading video:", e)); // Attempt to play
+
+            // Update details
+            currentVideoTitle.textContent = video.title;
+            videoDescription.textContent = video.description;
+
+            // Highlight the selected card
+            document.querySelectorAll('#video-list-container > div').forEach(card => {
+                card.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
+                if (card.getAttribute('data-video-id') === video.id) {
+                    card.classList.add('border-red-500', 'ring-2', 'ring-red-500');
+                }
+            });
+        }
+        
+        // --- Form Submission Handler ---
+        
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!isAuthReady || !currentUserId) {
+                formStatus.textContent = "Service is still initializing or authentication failed.";
+                return;
+            }
+
+            uploadButton.disabled = true;
+            formStatus.textContent = "Processing upload...";
+            
+            const title = document.getElementById('video-title').value.trim();
+            const description = document.getElementById('video-description-input').value.trim();
+            const url = document.getElementById('video-url-input').value.trim();
+
+            const newVideoData = {
+                title: title,
+                description: description,
+                url: url, // Simulated S3/CDN URL
+                sizeMB: Math.floor(Math.random() * 50 + 1), // Mock size
+                durationSec: Math.floor(Math.random() * 600 + 30), // Mock duration
+                status: 'Processed', // Simulated processing status
+                timestamp: serverTimestamp()
+            };
+
+            try {
+                const docRef = await addDoc(collection(db, VIDEO_COLLECTION(currentUserId)), newVideoData);
+                formStatus.textContent = `Video "${title}" logged successfully!`;
+                
+                // Clear the form fields (except the URL for convenience)
+                document.getElementById('video-title').value = '';
+                document.getElementById('video-description-input').value = '';
+
+            } catch (error) {
+                console.error("Error adding video document:", error);
+                formStatus.textContent = "Error saving video metadata. Check console.";
+            } finally {
+                uploadButton.disabled = false;
+                setTimeout(() => formStatus.textContent = '', 3000); // Clear status after 3 seconds
+            }
+        });
+
+        // --- Startup ---
+        initializeFirebase();
+        uploadButton.disabled = true; // Disable until auth is ready
+
+    </script>
+</body>
+</html>
